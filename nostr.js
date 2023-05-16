@@ -202,7 +202,7 @@ function sendNote(url, note, logger) {
 }
 
 function encode(prefix, hex) {
-  let words = bech32.toWords(buffer.Buffer.from(pubkey, 'hex'));
+  let words = bech32.toWords(buffer.Buffer.from(hex, 'hex'));
   return bech32.encode(prefix, words);
 }
 
