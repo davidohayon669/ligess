@@ -2,14 +2,43 @@ const fastify = require('fastify')({ logger: true })
 const { RelayPool, Relay, signId, calculateId, verifyEvent, getPublicKey } = require('nostr')
 const { bech32 } = require('bech32')
 const buffer = require('buffer')
+const fs = require('fs')
 
 const _nostrPrivKey = process.env.LIGESS_NOSTR_ZAPPER_PRIVATE_KEY
 const _nostrPubKey = _nostrPrivKey ? getPublicKey(_nostrPrivKey) : null
 
+const getMetadataNote = (file) => {
+  if (file) {
+    if (!fs.existsSync(file)) {
+      throw new Error(`Metadata file ${file} not found`)
+    }
+    let metadata = fs.readFileSync(file)
+    try {
+      let content = JSON.parse(metadata)
+      return {
+        pubkey: _nostrPubKey,
+        kind: 0,
+        created_at: Math.floor(Date.now() / 1000),
+        tags: [],
+        content: JSON.stringify(content)
+      }
+    }
+    catch (error) {
+      throw new Error(`Invalid JSON in metadata file ${file}`)
+    }
+  }
+}
+
+const _nostrMetadataNote = getMetadataNote(process.env.LIGESS_NOSTR_METADATA_FILE)
+
 const pendingZapRequests = {}
+const sentMetadata = []
 
 if (_nostrPubKey) {
-  fastify.log.info({msg: 'Nostr NIP-57 enabled', npub: pubkeytonpub(_nostrPubKey)})
+  fastify.log.info({msg: 'Nostr NIP-57 enabled', npub: encode('npub', _nostrPubKey)})
+}
+if (_nostrMetadataNote) {
+  fastify.log.info({msg: 'Nostr NIP-01 metadata enabled', note: _nostrMetadataNote})
 }
 
 const getNostrPubKey = () => _nostrPubKey
@@ -76,7 +105,6 @@ const storePendingZapRequest = (paymentHash, zapRequest, comment, logger) => {
 }
 
 const handleInvoiceUpdate = async (invoice) => {
-
   if (invoice.status == 'Cancelled') {
     delete pendingZapRequests[invoice.paymentHash]
     return
@@ -115,7 +143,7 @@ const handleInvoiceUpdate = async (invoice) => {
   zapNote.id = await calculateId(zapNote)
   zapNote.sig = await signId(_nostrPrivKey, zapNote.id)
 
-  logger.info({msg: 'Invoice settled', note: zapNote.id, amount: invoice.amount, npub: pubkeytonpub(zapRequest.pubkey), comment: content})
+  logger.info({msg: 'Invoice settled', note: zapNote.id, amount: invoice.amount, npub: encode('npub', zapRequest.pubkey), comment: content})
 
   const relaytags = getTags(zapRequest.tags, 'relays')
   relaytags[0].slice(1).forEach(relay => sendNote(relay, zapNote, logger))
@@ -131,6 +159,16 @@ function sendNote(url, note, logger) {
   const relay = Relay(url, {reconnect: false})
   
   relay.on('open', async () => {
+    if (_nostrMetadataNote) {
+      if (!_nostrMetadataNote.id) {
+        _nostrMetadataNote.id = await calculateId(_nostrMetadataNote)
+        _nostrMetadataNote.sig = await signId(_nostrPrivKey, _nostrMetadataNote.id)
+      }
+      if (!sentMetadata.includes(url)) {
+        await relay.send(["EVENT", _nostrMetadataNote])
+        sentMetadata.push(url)
+      }
+    }
     
     await relay.send(["EVENT", note])
 
@@ -152,17 +190,20 @@ function sendNote(url, note, logger) {
   });
   
   relay.on('ok', (id) => {
+    if (_nostrMetadataNote && id == _nostrMetadataNote.id) {
+      logger.info({msg: 'Metadata note sent', relay: relay.url, id: encode('note', id)})
+    }
     if (id === note.id) {
-      logger.info({msg: 'Zap note sent', relay: relay.url})
+      logger.info({msg: 'Zap note sent', relay: relay.url, id: encode('note', id)})
 
       setImmediate(() => relay.close())
     }
   });
 }
 
-function pubkeytonpub(pubkey) {
-  let words = bech32.toWords( buffer.Buffer.from( pubkey, 'hex' ) );
-  return bech32.encode( "npub", words );
+function encode(prefix, hex) {
+  let words = bech32.toWords(buffer.Buffer.from(pubkey, 'hex'));
+  return bech32.encode(prefix, words);
 }
 
 module.exports = { getNostrPubKey, verifyZapRequest, storePendingZapRequest, handleInvoiceUpdate }

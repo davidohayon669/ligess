@@ -101,6 +101,10 @@ To have zap requests working from web clients, and prevent CORS errors, make sur
 Access-Control-Allow-Origin "*";
 ```
 
+To have ligess also send a kind 0 (metadata) note, create a json file and refer to it with the `LIGESS_NOSTR_METADATA_FILE` in the `.env` config file. An example is provided in `metadata.json.example`.
+
+This note will be sent once per relay.
+
 ## Support this project
 You can help me by contributing to this project or by donating to my Lightning address `dolu@bips.xyz`
 
