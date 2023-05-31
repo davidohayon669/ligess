@@ -58,7 +58,7 @@ const handleRelayConnection = (connection, request) => {
     try {
       const message = JSON.parse(data);
 
-      logger.info({msg: 'Message received', message: message})
+      // logger.info({msg: 'Message received', message: message})
 
       switch(message[0])
       {
@@ -98,8 +98,10 @@ const handleRelayConnection = (connection, request) => {
     zapRequest = null
   }
   
-  connection.socket.on('close', async (code) => {
-    logger.info({msg: 'Connection closed', code: code})
+  connection.socket.on('close', async (code, reason) => {
+    if (code != 1000) {
+      logger.info({msg: 'Connection closed', code: code, reason: reason})
+    }
   })
 
   connection.socket.send(JSON.stringify(['AUTH',challenge]))
@@ -237,7 +239,7 @@ function verifyZapAmount(satoshis, logger) {
   if (zapAmountLastHour + satoshis > _nostrWalletConnectBudgetHour)
     throw new Error('Zap amount over hour budget')
 
-  logger.info({ msg: 'Zap budget', hour: zapAmountLastHour, day: zapAmountLastDay })
+  logger.info({ msg: 'Total', hour: zapAmountLastHour, day: zapAmountLastDay })
 }
 
 function encode(prefix, hex) {
