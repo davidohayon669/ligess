@@ -1,4 +1,4 @@
-# LIGESS (**Lig**~~hting addr~~**ess**)
+# LIGESS (**Lig**~~htning addr~~**ess**)
 
 ## Your personal Lightning address server
 > Like an email address, but for your Bitcoin!
