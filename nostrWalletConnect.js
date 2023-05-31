@@ -9,11 +9,10 @@ const fs = require('fs')
 
 const unaWrapper = getLnClient()
 
-const _domain = process.env.LIGESS_DOMAIN
-
 const _nostrWalletConnectEncryptPrivKey = process.env.LIGESS_NOSTR_WALLET_CONNECT_PRIVATE_KEY
 const _nostrWalletConnectEncryptPubKey = _nostrWalletConnectEncryptPrivKey ? getPublicKey(_nostrWalletConnectEncryptPrivKey) : null
 const _nostrWalletConnectAuthPubKey = process.env.LIGESS_NOSTR_WALLET_CONNECT_PUBLIC_KEY
+const _nostrWalletConnectRelayHost = new URL(process.env.LIGESS_NOSTR_WALLET_CONNECT_RELAY).hostname
 const _nostrWalletConnectBudgetZap = process.env.LIGESS_NOSTR_WALLET_CONNECT_BUDGET_ZAP
 const _nostrWalletConnectBudgetHour = process.env.LIGESS_NOSTR_WALLET_CONNECT_BUDGET_HOUR
 const _nostrWalletConnectBudgetDay = process.env.LIGESS_NOSTR_WALLET_CONNECT_BUDGET_DAY
@@ -160,7 +159,7 @@ async function verifyAuthResponse(authResponse, challenge) {
   if (relay.protocol !== 'ws:' && relay.protocol !== 'wss:')
     throw new Error('Invalid relay protocol')
 
-  if (process.env.HOST != '0.0.0.0' && relay.host !== _domain)
+  if (process.env.HOST != '0.0.0.0' && relay.host !== _nostrWalletConnectRelayHost)
     throw new Error(`Relay host mismatch`)
 
   if (await calculateId(authResponse) !== authResponse.id)
