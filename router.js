@@ -1,8 +1,10 @@
 const fastify = require('fastify')({ logger: true })
+fastify.register(require('@fastify/websocket'));
 const { bech32 } = require('bech32')
 const crypto = require('crypto')
 const { getLnClient } = require('./lnClient')
 const { getNostrPubKey, verifyZapRequest, storePendingZapRequest, handleInvoiceUpdate } = require('./nostr')
+const { getWalletConnectWsHandler } = require('./nostrWalletConnect')
 
 const _username = process.env.LIGESS_USERNAME
 const _domain = process.env.LIGESS_DOMAIN
@@ -13,19 +15,26 @@ const _nostrPubKey = getNostrPubKey()
 
 const unaWrapper = getLnClient()
 
-fastify.get('/', async (request, reply) => {
-  // TODO Render html instead of JSON
-  fastify.log.warn('Unexpected request to root. When using a proxy, make sure the URL path is forwarded.')
+fastify.register(async function() {
+  fastify.route({
+    method: 'GET',
+    url: '/',
+    handler: (request, reply) => {
+      // TODO Render html instead of JSON
+      fastify.log.warn('Unexpected request to root. When using a proxy, make sure the URL path is forwarded.')
 
-  const words = bech32.toWords(Buffer.from(_lnurlpUrl, 'utf8'))
-  return {
-    lnurlp: bech32.encode('lnurl', words, 1023),
-    decodedUrl: _lnurlpUrl,
-    info: {
-      title: 'Ligess: Lightning address personal server',
-      source: 'https://github.com/dolu89/ligess',
+      const words = bech32.toWords(Buffer.from(_lnurlpUrl, 'utf8'))
+      return {
+        lnurlp: bech32.encode('lnurl', words, 1023),
+        decodedUrl: _lnurlpUrl,
+        info: {
+          title: 'Ligess: Lightning address personal server',
+          source: 'https://github.com/dolu89/ligess',
+        },
+      }
     },
-  }
+    wsHandler: getWalletConnectWsHandler()
+  })
 })
 
 fastify.get('/.well-known/lnurlp/:username', async (request, reply) => {
@@ -96,12 +105,9 @@ if (_nostrPubKey) {
   unaWrapper.watchInvoices().on('invoice-updated', (invoice) => handleInvoiceUpdate(invoice))
 }
 
-const start = async () => {
+const start = () => {
   try {
-    await fastify.listen(
-      process.env.PORT || 3000,
-      process.env.HOST || '127.0.0.1'
-    )
+    fastify.listen({ port: process.env.PORT, host: process.env.HOST || '127.0.0.1'})
   } catch (err) {
     fastify.log.error(err)
     process.exit(1)

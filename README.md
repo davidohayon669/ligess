@@ -43,7 +43,7 @@ In `.env` config file or `docker-compose` environment:
 ```
 LIGESS_LN_BACKEND=LND
 LIGESS_LND_REST=https://yourLNDRestAPI.com # can be an onion url
-LIGESS_LND_MACAROON=hex string macaroon with invoice:create # should be a long (~265 character) string that you generate either on a CLI or in a UI.
+LIGESS_LND_MACAROON=hex string macaroon with invoices:read and invoices:write # should be a long (~265 character) string that you generate either on a CLI or in a UI.
 ```
 
 #### Tip
@@ -101,11 +101,45 @@ To have zap requests working from web clients, and prevent CORS errors, make sur
 Access-Control-Allow-Origin "*";
 ```
 
-To have ligess also send a kind 0 (metadata) note, create a json file and refer to it with the `LIGESS_NOSTR_METADATA_FILE` in the `.env` config file. An example is provided in `metadata.json.example`.
+#### Nostr metadata
+To have ligess send a kind 0 (metadata) note, create a json file and refer to it with the `LIGESS_NOSTR_METADATA_FILE` property in the `.env` config file. An example is provided in `metadata.json.example`.
 
 This note will be sent once per relay.
+
+#### Nostr Wallet Connect
+To enable Nostr Wallet Connect (aka One-Tap-Zaps), set `LIGESS_NOSTR_WALLET_CONNECT_SECRET` with a Nostr private key. It is recommended to generate a new public/private keypair for this, as it will be shared with the apps that use Nostr Wallet Connect feature and can spend funds from your node.
+
+First, create a new macaroon, as Ligess needs the `offchain:write` permission to be able to pay invoices.
+
+For LND, this can be done with:
+```
+lncli bakemacaroon invoices:write invoices:read offchain:write
+```
+
+Note: If this gives a permission denied error, all macaroons need to regenerated. See https://github.com/lightningnetwork/lnd/blob/master/macaroons/README.md#upgrading-from-v080-beta-or-earlier for more information on this.
+
+Configure the external relay URL with `LIGESS_NOSTR_WALLET_CONNECT_RELAY`. Any incoming websocket connection on this URL should be forwarded to the ligess listening port.
+
+The connection string to use in the app is composed as follows: `nostrconnect://<pubkey>?relay:<relay url>&secret=<privkey>`.
+
+If the private key and relay are configured, running `node showWalletConnectQR.js` will generate a QR code of this connection string that can be scanned by a mobile app.
+
+For extra security, it's possible to require authentication on the relay connection. When using Amethyst, it will authenticate using the keys of the logged in user. To enforce this, set the pubkey of that user with `LIGESS_NOSTR_WALLET_CONNECT_PUBLIC_KEY`.
+
+Damus is currently untested.
+
+##### Budget limitations
+Ligess has a mandatory budget configuration for Nostr Wallet Connect. This limits the amounts of a single zap, and of hour and day spends:
+```
+LIGESS_NOSTR_WALLET_CONNECT_BUDGET_ZAP=5000
+LIGESS_NOSTR_WALLET_CONNECT_BUDGET_HOUR=25000
+LIGESS_NOSTR_WALLET_CONNECT_BUDGET_DAY=100000
+```
+Zap amounts and timestamps for the last day are stored in a `zaps.json` file. This is to keep the budget in tact after a restart.
 
 ## Support this project
 You can help me by contributing to this project or by donating to my Lightning address `dolu@bips.xyz`
 
 Other donation methods are avaible here https://bips.xyz/support
+
+The Nostr extensions are made by mutatrum, and tips for this are welcome on the Lightning address `mutatrum@hodl.camp`.

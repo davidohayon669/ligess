@@ -35,10 +35,10 @@ const pendingZapRequests = {}
 const sentMetadata = []
 
 if (_nostrPubKey) {
-  fastify.log.info({msg: 'Nostr NIP-57 enabled', npub: encode('npub', _nostrPubKey)})
+  fastify.log.info({msg: 'Nostr Lightning Zaps (NIP-57) enabled', npub: encode('npub', _nostrPubKey)})
 }
 if (_nostrMetadataNote) {
-  fastify.log.info({msg: 'Nostr NIP-01 metadata enabled', note: _nostrMetadataNote})
+  fastify.log.info({msg: 'Nostr Metadata Kind 0 (NIP-01) enabled', note: _nostrMetadataNote})
 }
 
 const getNostrPubKey = () => _nostrPubKey
