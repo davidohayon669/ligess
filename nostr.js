@@ -179,22 +179,26 @@ function sendNote(url, note, logger) {
     logger.info({msg: notice, relay: relay.url})
   });
 
+  relay.on('message', (message) => {
+    logger.info({msg: message, relay: relay.url})
+  })
+
   relay.on('close', (e) => {
     if (e.code !== 1000 && e.code !== 1005) {
       logger.info({msg: 'Close', relay: relay.url, code: e.code, reason: e.reason})
     }
   });
-  
+
   relay.on('error', (e) => {
     logger.warn({msg: e.message, relay: relay.url})
   });
   
-  relay.on('ok', (id) => {
+  relay.on('ok', (id, success, message) => {
     if (_nostrMetadataNote && id == _nostrMetadataNote.id) {
-      logger.info({msg: 'Metadata note sent', relay: relay.url, id: encode('note', id)})
+      logger.info({msg: 'Metadata event', relay: relay.url, success: success, message: message, id: encode('event', id)})
     }
     if (id === note.id) {
-      logger.info({msg: 'Zap note sent', relay: relay.url, id: encode('note', id)})
+      logger.info({msg: 'Zap event', relay: relay.url, success: success, message: message, id: encode('event', id)})
 
       setImmediate(() => relay.close())
     }
