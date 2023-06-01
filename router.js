@@ -34,7 +34,7 @@ if (isWalletConnectEnabled()) {
   fastify.register(async function () {
     fastify.route({
       method: 'GET',
-      url: '/relay',
+      url: '/relay/',
       handler: getWalletConnectHandler(),
       wsHandler: getWalletConnectWsHandler()
     })

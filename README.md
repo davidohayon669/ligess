@@ -118,7 +118,7 @@ lncli bakemacaroon invoices:write invoices:read offchain:write
 
 Note: If this gives a permission denied error, all macaroons need to regenerated. See https://github.com/lightningnetwork/lnd/blob/master/macaroons/README.md#upgrading-from-v080-beta-or-earlier for more information on this.
 
-Configure the external relay URL with `LIGESS_NOSTR_WALLET_CONNECT_RELAY`. Any incoming websocket connection on this URL should be forwarded to `/relay`.
+Configure the external relay URL with `LIGESS_NOSTR_WALLET_CONNECT_RELAY`. Any incoming websocket connection on this URL should be forwarded to `/relay/`.
 
 It's also possible to configure a Relay Information Document (NIP-11) by specifying a file in `LIGESS_NOSTR_RELAY_INFORMATION`.
 
