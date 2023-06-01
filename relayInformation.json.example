@@ -1,0 +1,9 @@
+{
+  "name": "<string identifying relay>",
+  "description": "<string with detailed information>",
+  "pubkey": "<administrative contact pubkey>",
+  "contact": "<administrative alternate contact>",
+  "supported_nips": [11,47,57],
+  "software": "https://github.com/mutatrum/ligess",
+  "version": "#5d58120"
+}

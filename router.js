@@ -4,7 +4,7 @@ const { bech32 } = require('bech32')
 const crypto = require('crypto')
 const { getLnClient } = require('./lnClient')
 const { getNostrPubKey, verifyZapRequest, storePendingZapRequest, handleInvoiceUpdate } = require('./nostr')
-const { getWalletConnectWsHandler } = require('./nostrWalletConnect')
+const { isWalletConnectEnabled, getWalletConnectHandler, getWalletConnectWsHandler } = require('./nostrWalletConnect')
 
 const _username = process.env.LIGESS_USERNAME
 const _domain = process.env.LIGESS_DOMAIN
@@ -15,27 +15,31 @@ const _nostrPubKey = getNostrPubKey()
 
 const unaWrapper = getLnClient()
 
-fastify.register(async function() {
-  fastify.route({
-    method: 'GET',
-    url: '/',
-    handler: (request, reply) => {
-      // TODO Render html instead of JSON
-      fastify.log.warn('Unexpected request to root. When using a proxy, make sure the URL path is forwarded.')
+fastify.get('/', async (request, reply) => {
+  // TODO Render html instead of JSON
+  fastify.log.warn('Unexpected request to root. When using a proxy, make sure the URL path is forwarded.')
 
-      const words = bech32.toWords(Buffer.from(_lnurlpUrl, 'utf8'))
-      return {
-        lnurlp: bech32.encode('lnurl', words, 1023),
-        decodedUrl: _lnurlpUrl,
-        info: {
-          title: 'Ligess: Lightning address personal server',
-          source: 'https://github.com/dolu89/ligess',
-        },
-      }
+  const words = bech32.toWords(Buffer.from(_lnurlpUrl, 'utf8'))
+  return {
+    lnurlp: bech32.encode('lnurl', words, 1023),
+    decodedUrl: _lnurlpUrl,
+    info: {
+      title: 'Ligess: Lightning address personal server',
+      source: 'https://github.com/dolu89/ligess',
     },
-    wsHandler: getWalletConnectWsHandler()
-  })
+  }
 })
+
+if (isWalletConnectEnabled()) {
+  fastify.register(async function () {
+    fastify.route({
+      method: 'GET',
+      url: '/relay',
+      handler: getWalletConnectHandler(),
+      wsHandler: getWalletConnectWsHandler()
+    })
+  })
+}
 
 fastify.get('/.well-known/lnurlp/:username', async (request, reply) => {
   try {

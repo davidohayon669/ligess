@@ -23,25 +23,44 @@ const TIME_WINDOW_HOUR = 60 * 60 * 1000
 const TIME_WINDOW_DAY = TIME_WINDOW_HOUR * 24
 
 let zaps = []
-
 if (fs.existsSync(ZAPS_FILE)) {
   zaps = JSON.parse(fs.readFileSync(ZAPS_FILE))
   zaps = filterZaps(TIME_WINDOW_DAY)
 }
 
-const getWalletConnectWsHandler = () => {
-  if (_nostrWalletConnectEncryptPrivKey) {
-    fastify.log.info({msg: 'Nostr Wallet Connect (NIP-47) enabled', npub: encode('npub', _nostrWalletConnectEncryptPubKey)})
+const isWalletConnectEnabled = () => _nostrWalletConnectEncryptPrivKey !== undefined
 
-    if (_nostrWalletConnectAuthPubKey) {
-      fastify.log.info({msg: 'Nostr Wallet Connect Authentication (NIP-42) enabled', npub: encode('npub', _nostrWalletConnectAuthPubKey)})
+const getNostrRelayInformation = (file) => {
+  if (file) {
+    if (!fs.existsSync(file)) {
+      throw new Error(`Relay information file ${file} not found`)
     }
-    
-    fastify.log.info({msg: `Nostr Wallet Connect budget: max zap ${_nostrWalletConnectBudgetZap}, hourly: ${_nostrWalletConnectBudgetDay}, daily: ${_nostrWalletConnectBudgetHour}`})
-
-    return handleRelayConnection
+    let content = JSON.parse(fs.readFileSync(file))
+    fastify.log.info({msg: 'Nostr Wallet Connect Relay Information (NIP-11) enabled', content: content})
+    return content
   }
-  return undefined;
+}
+
+const _nostrRelayInformation = getNostrRelayInformation(process.env.LIGESS_NOSTR_RELAY_INFORMATION)
+
+const getWalletConnectHandler = () => (request, reply) => {
+  if (_nostrRelayInformation) {
+    reply.send(_nostrRelayInformation)
+  } else {
+    reply.code(404).send()
+  }
+}
+
+const getWalletConnectWsHandler = () => {
+  fastify.log.info({msg: 'Nostr Wallet Connect (NIP-47) enabled', npub: encode('npub', _nostrWalletConnectEncryptPubKey)})
+
+  if (_nostrWalletConnectAuthPubKey) {
+    fastify.log.info({msg: 'Nostr Wallet Connect Authentication (NIP-42) enabled', npub: encode('npub', _nostrWalletConnectAuthPubKey)})
+  }
+  
+  fastify.log.info({msg: `Nostr Wallet Connect budget: max zap ${_nostrWalletConnectBudgetZap}, hourly: ${_nostrWalletConnectBudgetDay}, daily: ${_nostrWalletConnectBudgetHour}`})
+
+  return handleRelayConnection
 }
 
 const handleRelayConnection = (connection, request) => {
@@ -260,4 +279,4 @@ function sumAmount(entries) {
   return entries.reduce((acc, zap) => acc + zap.amount, 0);
 }
 
-module.exports = { getWalletConnectWsHandler }
+module.exports = { isWalletConnectEnabled, getWalletConnectHandler, getWalletConnectWsHandler }
