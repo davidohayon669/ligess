@@ -84,7 +84,7 @@ const handleRelayConnection = (connection, request) => {
         case 'REQ':
           const subscriptionId = message[1]
           const payload = message[2]
-          if (payload.kinds && payload.kinds.includes('13194')) {
+          if (payload.kinds && payload.kinds.includes(13194)) {
             let response = {
               pubkey: _nostrWalletConnectEncryptPubKey,
               kind: 13194,
