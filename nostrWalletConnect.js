@@ -134,10 +134,17 @@ const handleRelayConnection = (connection, request) => {
     }
   })
 
+  connection.socket.on('error', async (message) => {
+    console.log({msg: message})
+  })
+
   connection.socket.send(JSON.stringify(['AUTH',challenge]))
 
   setTimeout(() => {
-    if (!isAuthenticated) connection.socket.close()
+    if (!isAuthenticated) {
+      console.log({msg: 'Closing idle connection'})
+      connection.socket.close()
+    }
   }, 10000)
 }
 
