@@ -92,7 +92,7 @@ const handleRelayConnection = (connection, request) => {
             }
             response.id = await calculateId(response)
             response.sig = await signId(_nostrWalletConnectEncryptPrivKey, response.id)
-            connection.socket.send(JSON.stringify(['EVENT', response]))
+            connection.socket.send(JSON.stringify(['EVENT', subscriptionId, response]))
           }
           connection.socket.send(JSON.stringify(['EOSE', subscriptionId]))
           break
