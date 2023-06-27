@@ -5,5 +5,8 @@
   "contact": "<administrative alternate contact>",
   "supported_nips": [11,47,57],
   "software": "https://github.com/mutatrum/ligess",
-  "version": "#5d58120"
+  "version": "#5d58120",
+  "limitation": {
+    "auth_required": true
+  }
 }

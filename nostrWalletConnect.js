@@ -83,6 +83,17 @@ const handleRelayConnection = (connection, request) => {
       {
         case 'REQ':
           const subscriptionId = message[1]
+          const payload = message[2]
+          if (payload.kinds && payload.kinds.includes('13194')) {
+            let response = {
+              pubkey: _nostrWalletConnectEncryptPubKey,
+              kind: 13194,
+              content: 'pay_invoice',
+            }
+            response.id = await calculateId(response)
+            response.sig = await signId(_nostrWalletConnectEncryptPrivKey, response.id)
+            connection.socket.send(JSON.stringify(['EVENT', response]))
+          }
           connection.socket.send(JSON.stringify(['EOSE', subscriptionId]))
           break
 
@@ -197,6 +208,7 @@ async function verifyAuthResponse(authResponse, challenge) {
 
 async function processZapRequest(zapRequest, logger) {
   let response = {
+    pubkey: _nostrWalletConnectEncryptPubKey,
     tags: [['e', zapRequest.id]]
   }
 
